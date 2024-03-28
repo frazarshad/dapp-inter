@@ -17,5 +17,8 @@ jobs:
     with:
       docker_compose_command: |
         docker-compose -f test/e2e/docker-compose-vaults.yml \
-        --profile synpress up --build \
+        --profile $SYNPRESS_PROFILE up --build \
         --exit-code-from synpress
+    env:
+      SYNPRESS_PROFILE: ${{ github.event_name == 'schedule' && 'daily-tests' || 'synpress' }}
+      CYPRESS_AGORIC_NET: ${{ github.event_name == 'schedule' && 'emerynet' || 'local' }}

@@ -33,6 +33,7 @@ jobs:
       - name: Run e2e tests
         run: ${{ inputs.docker_compose_command }}
         env:
+          # for docker-compose.yml
           COMPOSE_DOCKER_CLI_BUILD: 1
           DOCKER_BUILDKIT: 1
           DOCKER_DEFAULT_PLATFORM: linux/amd64
