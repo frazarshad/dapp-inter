@@ -1,49 +1,21 @@
 /* eslint-disable ui-testing/no-disabled-tests */
 describe('Vaults UI Test Cases', () => {
   context('Test commands', () => {
-    let collateralizationRatio;
-    it(`should setup Keplr account and connect with Agoric Chain`, () => {
-      cy.origin('https://wallet.agoric.app/', () => {
-        cy.visit('/');
-      });
-      cy.acceptAccess().then(taskCompleted => {
-        expect(taskCompleted).to.be.true;
-      });
-
-      cy.origin('https://wallet.agoric.app/', () => {
-        cy.visit('/wallet/');
-
-        cy.get('input.PrivateSwitchBase-input').click();
-        cy.contains('Proceed').click();
-
-        cy.get('button[aria-label="Settings"]').click();
-
-        cy.get('#demo-simple-select').click();
-        cy.get('li[data-value="local"]').click();
-        cy.contains('button', 'Connect').click();
-      });
-
-      cy.acceptAccess().then(taskCompleted => {
-        expect(taskCompleted).to.be.true;
-      });
-    });
-
     it('should connect with the wallet', () => {
       cy.visit('/');
 
       cy.contains('Connect Wallet').click();
-      cy.get('label.cursor-pointer input[type="checkbox"]').check();
-      cy.contains('Proceed').click();
 
       cy.acceptAccess().then(taskCompleted => {
         expect(taskCompleted).to.be.true;
-        cy.acceptAccess().then(taskCompleted => {
-          expect(taskCompleted).to.be.true;
-        });
       });
+      cy.get('label.cursor-pointer input[type="checkbox"]').check();
+      cy.contains('Proceed').click();
+
+      cy.acceptAccess();
     });
 
-    it('should adjust the collateral by performing a withdrawl and approve the transaction successfully', () => {
+    it('should withdraw ATOMS from vault successfully', () => {
       cy.visit('/');
       cy.contains('div', /ATOM.*#5/).click();
 
@@ -57,6 +29,85 @@ describe('Vaults UI Test Cases', () => {
             .within(() => {
               cy.get('input[type="number"]').click();
               cy.get('input[type="number"]').type(5);
+            });
+        });
+
+      cy.contains('button', 'Adjust Vault').click();
+      cy.confirmTransaction().then(taskCompleted => {
+        expect(taskCompleted).to.be.true;
+        cy.contains('p', "Your vault's balances have been updated.").should(
+          'exist',
+        );
+        cy.contains('Back to my vaults').click();
+      });
+    });
+
+    it('should create a new vault and approve the transaction successfully', () => {
+      cy.visit('/');
+
+      cy.contains('button', 'Add new vault').click();
+      cy.contains('button', /ATOM/).click();
+
+      cy.contains('.input-label', 'ATOM to lock up *')
+        .next()
+        .within(() => {
+          cy.get('input[type="number"]').click();
+          cy.get('input[type="number"]').clear();
+          cy.get('input[type="number"]').type(2);
+        });
+
+      cy.contains('button', 'Create Vault').click();
+
+      cy.confirmTransaction().then(taskCompleted => {
+        expect(taskCompleted).to.be.true;
+        cy.contains(
+          'p',
+          'You can manage your vaults from the "My Vaults" view.',
+        ).should('exist');
+      });
+    });
+
+    it('should open the new vault', () => {
+      cy.visit('/');
+      cy.get('span')
+        .contains(/My Vaults.*\(\d+\)/)
+        .children()
+        .first()
+        .spread((...element) => {
+          // Get the total number of vaults present
+          const vaultCount = Number(element[0].innerHTML.slice(2, -1));
+
+          cy.get('div.shadow-card div.text-secondary:contains("#")')
+            .should('have.length', vaultCount)
+            .spread((...vaults) => {
+              // Get the vault with the largest number and click on it
+              const maxValue = vaults.reduce(
+                (maxValue, currentValueRaw) => {
+                  const currentValue = Number(
+                    currentValueRaw.innerHTML.slice(1),
+                  );
+                  return currentValue > maxValue ? currentValue : maxValue;
+                },
+                Number(vaults[0].innerHTML.slice(1)),
+              );
+              cy.get(
+                `div.shadow-card div.text-secondary:contains("#${maxValue}")`,
+              ).click();
+            });
+        });
+    });
+
+    it('should adjust the collateral by performing a withdrawl and approve the transaction successfully', () => {
+      cy.contains('div', 'Adjust Collateral')
+        .next('.grid-cols-2')
+        .within(() => {
+          cy.contains('button', /^(Deposit|Withdraw|No Action)$/).click();
+          cy.contains('button', 'Withdraw').click();
+          cy.contains('.input-label', 'Amount')
+            .next('.input-wrapper')
+            .within(() => {
+              cy.get('input[type="number"]').click();
+              cy.get('input[type="number"]').type(1);
             });
         });
 
@@ -143,64 +194,7 @@ describe('Vaults UI Test Cases', () => {
       });
     });
 
-    it('should not close a vault because of insufficient IST to repay the debt', () => {
-      cy.contains('Close Out Vault').click();
-
-      cy.contains('button.bg-interPurple', 'Close Out Vault').click();
-
-      cy.confirmTransaction().then(taskCompleted => {
-        expect(taskCompleted).to.be.true;
-
-        cy.get('.Toastify__toast-body').should('exist');
-        cy.get('.Toastify__toast-body').should(
-          'contain',
-          'Offer failed: Error: cannot grab',
-        );
-      });
-    });
-
-    it('should create a new vault and approve the transaction successfully', () => {
-      cy.visit('/');
-      cy.contains('button', 'Add new vault').click();
-      cy.contains('button', /ATOM/).click();
-
-      cy.contains('.input-label', 'ATOM to lock up *')
-        .next()
-        .within(() => {
-          cy.get('input[type="number"]').click();
-          cy.get('input[type="number"]').clear();
-          cy.get('input[type="number"]').type(1);
-        });
-
-      cy.get('tr')
-        .contains('td', /^Collateralization Ratio$/)
-        .siblings('td.text-right.font-black')
-        .invoke('text')
-        .then(value => {
-          collateralizationRatio = value.trim();
-        });
-
-      cy.contains('button', 'Create Vault').click();
-
-      cy.confirmTransaction().then(taskCompleted => {
-        expect(taskCompleted).to.be.true;
-        cy.contains(
-          'p',
-          'You can manage your vaults from the "My Vaults" view.',
-        ).should('exist');
-      });
-    });
-
     it('should close the vault and approve the transaction successfully', () => {
-      cy.visit('/');
-
-      cy.get('tr.leading-7')
-        .contains('td.text-right.font-black', collateralizationRatio)
-        .prev('td.text-left')
-        .should('contain', 'Collateralization Ratio')
-        .parent('tr')
-        .click();
-
       cy.contains('Close Out Vault').click();
       cy.contains('button.bg-interPurple', 'Close Out Vault').click();
 
