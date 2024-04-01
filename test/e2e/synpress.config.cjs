@@ -9,4 +9,5 @@ module.exports = defineConfig({
     specPattern: 'test/e2e/specs/**/*spec.{js,jsx,ts,tsx}',
     supportFile: 'test/support.js',
   },
+  pageLoadTimeout: 60000,
 });
