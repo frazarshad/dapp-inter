@@ -12,9 +12,58 @@ describe('Vaults UI Test Cases', () => {
       },
     };
     const networkPhrases = phrasesList[Cypress.env('AGORIC_NET') || 'local'];
+
+    it('should setup the wallet', () => {
+      if (networkPhrases.isLocal) {
+        cy.setupWallet();
+      } else {
+        const walletAddress = {
+          value: null,
+        };
+        cy.setupWallet({
+          createNewWallet: true,
+          walletName: 'my created wallet',
+        });
+        cy.origin('https://wallet.agoric.app/', () => {
+          cy.visit('/wallet/');
+
+          cy.get('input.PrivateSwitchBase-input').click();
+          cy.contains('Proceed').click();
+        });
+        cy.acceptAccess();
+
+        cy.origin('https://wallet.agoric.app/', () => {
+          cy.visit('/wallet/');
+
+          cy.contains(/agoric.{39}/).spread(element => {
+            return element.innerHTML.match(/agoric.{39}/)[0];
+          });
+        }).then(address => {
+          walletAddress.value = address;
+        });
+        cy.origin(
+          'https://emerynet.faucet.agoric.net',
+          { args: { walletAddress } },
+          ({ walletAddress }) => {
+            cy.visit('/');
+            cy.get('[id="address"]').first().type(walletAddress.value);
+            cy.get('[type="submit"]').first().click();
+            cy.get('body').contains('success').should('exist');
+
+            cy.visit('/');
+            cy.get('[id="address"]').first().type(walletAddress.value);
+            cy.get('[type="radio"][value="client"]').click();
+            cy.get('[type="submit"]').first().click();
+            cy.get('body').contains('success').should('exist');
+          },
+        );
+      }
+    });
+
     it('should connect with the wallet', () => {
       cy.visit('/');
 
+      if (!networkPhrases.isLocal) cy.contains('button', 'Dismiss').click();
       cy.get('button').contains('Local Network').click();
       cy.get('button').contains(networkPhrases.interNetwork).click();
       if (!networkPhrases.isLocal)
@@ -93,7 +142,8 @@ describe('Vaults UI Test Cases', () => {
       if (!networkPhrases.isLocal)
         cy.get('button').contains('Keep using Old Version').click();
 
-      cy.contains('button', 'Add new vault').click();
+      if (networkPhrases.isLocal)
+        cy.contains('button', 'Add new vault').click();
       cy.contains('button', /ATOM/).click();
 
       cy.contains('.input-label', 'ATOM to lock up *')
