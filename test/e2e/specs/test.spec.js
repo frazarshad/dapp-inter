@@ -147,17 +147,10 @@ describe('Vaults UI Test Cases', () => {
               expect(
                 vaults.filter(vaultNo => !/^#\d+$/.test(vaultNo.innerHTML)),
               ).to.be.empty;
-              // Get the vault with the largest number and click on it
-              const maxValue = vaults.reduce(
-                (maxValue, currentValueRaw) => {
-                  const currentValue = Number(
-                    currentValueRaw.innerHTML.slice(1),
-                  );
-                  return currentValue > maxValue ? currentValue : maxValue;
-                },
-                Number(vaults[0].innerHTML.slice(1)),
-              );
-              cy.findByText(`#${maxValue}`).click();
+              // Get the vault with the latest ID number and click on it
+              const vaultIds = vaults.map(v => Number(v.innerHTML.slice(1)));
+              const latestId = Math.max(...vaultIds);
+              cy.findByText(`#${latestId}`).click();
             });
         });
     });
