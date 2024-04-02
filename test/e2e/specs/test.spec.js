@@ -1,16 +1,8 @@
+import { phrasesList, MINUTE_MS } from './config';
+
 /* eslint-disable ui-testing/no-disabled-tests */
 describe('Vaults UI Test Cases', () => {
   context('Test commands', () => {
-    const phrasesList = {
-      emerynet: {
-        interNetwork: 'Agoric Emerynet',
-        isLocal: false,
-      },
-      local: {
-        interNetwork: 'Local Network',
-        isLocal: true,
-      },
-    };
     const networkPhrases = phrasesList[Cypress.env('AGORIC_NET') || 'local'];
 
     it('should setup the wallet', () => {
@@ -27,7 +19,7 @@ describe('Vaults UI Test Cases', () => {
         cy.origin('https://wallet.agoric.app/', () => {
           cy.visit('/wallet/');
 
-          cy.get('input.PrivateSwitchBase-input').click();
+          cy.get('input[type="checkbox"]').click();
           cy.contains('Proceed').click();
         });
         cy.acceptAccess();
@@ -74,7 +66,7 @@ describe('Vaults UI Test Cases', () => {
       cy.acceptAccess().then(taskCompleted => {
         expect(taskCompleted).to.be.true;
       });
-      cy.get('label.cursor-pointer input[type="checkbox"]').check();
+      cy.get('label input[type="checkbox"]').check();
       cy.contains('Proceed').click();
 
       cy.acceptAccess();
@@ -102,7 +94,7 @@ describe('Vaults UI Test Cases', () => {
         cy.confirmTransaction().then(taskCompleted => {
           expect(taskCompleted).to.be.true;
           cy.contains('p', "Your vault's balances have been updated.", {
-            timeout: 60000,
+            timeout: MINUTE_MS,
           }).should('exist');
           cy.contains('Back to my vaults').click();
         });
@@ -133,7 +125,7 @@ describe('Vaults UI Test Cases', () => {
         cy.contains(
           'p',
           'You can manage your vaults from the "My Vaults" view.',
-          { timeout: 60000 },
+          { timeout: MINUTE_MS },
         ).should('exist');
         cy.contains('Manage my Vaults').click();
       });
@@ -144,11 +136,12 @@ describe('Vaults UI Test Cases', () => {
         .contains(/My Vaults.*\(\d+\)/)
         .children()
         .first()
-        .spread((...element) => {
+        .spread(element => {
           // Get the total number of vaults present
-          const vaultCount = Number(element[0].innerHTML.slice(2, -1));
+          const vaultCountRegex = element.innerHTML.match(/\((\d+)\)/);
+          const vaultCount = Number(vaultCountRegex[1]);
 
-          cy.get('div.shadow-card div.text-secondary:contains("#")')
+          cy.findAllByText(/#\d+/)
             .should('have.length', vaultCount)
             .spread((...vaults) => {
               expect(
@@ -164,9 +157,7 @@ describe('Vaults UI Test Cases', () => {
                 },
                 Number(vaults[0].innerHTML.slice(1)),
               );
-              cy.get(
-                `div.shadow-card div.text-secondary:contains("#${maxValue}")`,
-              ).click();
+              cy.findByText(`#${maxValue}`).click();
             });
         });
     });
@@ -189,7 +180,7 @@ describe('Vaults UI Test Cases', () => {
       cy.confirmTransaction().then(taskCompleted => {
         expect(taskCompleted).to.be.true;
         cy.contains('p', "Your vault's balances have been updated.", {
-          timeout: 60000,
+          timeout: MINUTE_MS,
         }).should('exist');
         cy.contains('Adjust more').click();
       });
@@ -214,7 +205,7 @@ describe('Vaults UI Test Cases', () => {
       cy.confirmTransaction().then(taskCompleted => {
         expect(taskCompleted).to.be.true;
         cy.contains('p', "Your vault's balances have been updated.", {
-          timeout: 60000,
+          timeout: MINUTE_MS,
         }).should('exist');
         cy.contains('Adjust more').click();
       });
@@ -238,7 +229,7 @@ describe('Vaults UI Test Cases', () => {
       cy.confirmTransaction().then(taskCompleted => {
         expect(taskCompleted).to.be.true;
         cy.contains('p', "Your vault's balances have been updated.", {
-          timeout: 60000,
+          timeout: MINUTE_MS,
         }).should('exist');
         cy.contains('Adjust more').click();
       });
@@ -262,7 +253,7 @@ describe('Vaults UI Test Cases', () => {
       cy.confirmTransaction().then(taskCompleted => {
         expect(taskCompleted).to.be.true;
         cy.contains('p', "Your vault's balances have been updated.", {
-          timeout: 60000,
+          timeout: MINUTE_MS,
         }).should('exist');
         cy.contains('Adjust more').click();
       });
