@@ -7,11 +7,29 @@ on:
     branches: [main]
   schedule:
     - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      network:
+        description: 'Select the blockchain network for testing'
+        required: false
+        default: 'emerynet'
+        type: choice
+        options:
+          - local
+          - emerynet
+      phrase:
+        description: 'The mnemonic phrase for the account to use in testing'
+        required: false
+        type: string
 
 concurrency:
   group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label ||
     github.head_ref || github.ref }}'
   cancel-in-progress: true
+
+env:
+  IS_EMERYNET_TEST: ${{ github.event_name == 'schedule' || inputs.network == 'emerynet' }}
+  SYNPRESS_PROFILE: ${{ env.IS_EMERYNET_TEST && 'daily-tests' || 'synpress' }}
 
 jobs:
   run-e2e:
@@ -21,3 +39,5 @@ jobs:
         docker-compose -f test/e2e/docker-compose-vaults.yml \
         --profile $SYNPRESS_PROFILE up --build \
         --exit-code-from synpress
+      is_emerynet_test: ${{ env.IS_EMERYNET_TEST }}
+      mnemonic_phrase: ${{ inputs.phrase }}
