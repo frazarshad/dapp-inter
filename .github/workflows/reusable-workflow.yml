@@ -41,6 +41,7 @@ jobs:
         run: ${{ inputs.docker_compose_command }}
         env:
           # conditionals based on github event
+          SYNPRESS_PROFILE: ${{ inputs.is_emerynet_test && 'daily-tests' || 'synpress' }}
           CYPRESS_AGORIC_NET: ${{ inputs.is_emerynet_test == 'true' && 'emerynet' || 'local' }}
           # for docker-compose.yml
           COMPOSE_DOCKER_CLI_BUILD: 1
